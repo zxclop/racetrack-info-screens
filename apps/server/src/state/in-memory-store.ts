@@ -1,13 +1,16 @@
 import crypto from "crypto"
 import { RaceSession } from "../modules/race-sessions/race-session.types"
+import { CurrentRace } from "../modules/race-control/race-control.types"
 
-export const store = {
+export const store: { currentRace: CurrentRace; nextSessions: RaceSession[]; finishedSessions: RaceSession[] } = {
   currentRace: {
     sessionId: null,
-    status: "idle",
-    timer: null,
+    sessionName: null,
+    mode: "idle",
+    startedAt: null,
+    endedAt: null,
     participants: [],
-    leaderboard: [],
+    bestLap: null,
   },
 
   nextSessions: [],
@@ -34,20 +37,18 @@ class RaceSessionStore {
   }
 
   update(id: string, updatedFields: Partial<Omit<RaceSession, "id">>) {
-    const existingSession = this.sessions.get(id)
+    const existing = this.sessions.get(id)
 
-    if (!existingSession) {
-      return null
-    }
+    if (!existing) return null
 
-    const updatedSession: RaceSession = {
-      ...existingSession,
+    const updated: RaceSession = {
+      ...existing,
       ...updatedFields,
-      id: existingSession.id,
+      id: existing.id,
     }
 
-    this.sessions.set(id, updatedSession)
-    return updatedSession
+    this.sessions.set(id, updated)
+    return updated
   }
 
   delete(id: string) {
