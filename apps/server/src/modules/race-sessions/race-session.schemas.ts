@@ -19,7 +19,7 @@ export const raceSessionSchema = {
         racerNames: { 
             type: "array", 
             items: { type: "string", minLength: 1, maxLength: 100 },
-            minItems: 1
+            // minItems: 1
         },
         startTime: { type: "string", format: "date-time" },
         endTime: { type: "string", format: "date-time" },
@@ -36,7 +36,7 @@ export const createRaceSessionSchema = {
         racerNames: { 
             type: "array", 
             items: { type: "string", minLength: 1, maxLength: 100 },
-            minItems: 1 
+            // minItems: 1 
         },
         startTime: { type: "string", format: "date-time" },
         endTime: { type: "string", format: "date-time" },
@@ -52,7 +52,7 @@ export const updateRaceSessionSchema = {
         racerNames: { 
             type: "array",
             items: { type: "string", minLength: 1, maxLength: 100 },
-            minItems: 1 
+            // minItems: 1 
         },
         startTime: { type: "string", format: "date-time" },
         endTime: { type: "string", format: "date-time" },

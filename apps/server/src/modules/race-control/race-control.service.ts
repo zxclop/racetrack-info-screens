@@ -1,8 +1,14 @@
 import { raceStore, store } from "../../state/in-memory-store"
 import { raceControlMapper } from "./race-control.mapper"
-import { EndSessionDto, SetRaceModeDto, StartRaceDto } from "./race-control.schemas"
+import {
+  EndSessionDto,
+  RecordLapDto,
+  SetRaceModeDto,
+  StartRaceDto,
+} from "./race-control.schemas"
 import {
   ActiveRaceNotFoundError,
+  ParticipantNotFoundError,
   RaceAlreadyStartedError,
   SessionNotFoundError,
 } from "./race-control.errors"
@@ -48,6 +54,28 @@ export const raceControlService = {
     raceStateMachine.assertTransition(store.currentRace.mode, data.mode)
 
     store.currentRace.mode = data.mode
+
+    return raceControlMapper.toResponse(store.currentRace)
+  },
+
+  recordLap(data: RecordLapDto) {
+    if (!store.currentRace.sessionId) {
+      throw new ActiveRaceNotFoundError()
+    }
+
+    if (store.currentRace.mode === "idle" || store.currentRace.mode === "ended") {
+      throw new ActiveRaceNotFoundError()
+    }
+
+    const participant = store.currentRace.participants.find(
+      (item) => item.name === data.racerName
+    )
+
+    if (!participant) {
+      throw new ParticipantNotFoundError(data.racerName)
+    }
+
+    participant.laps += 1
 
     return raceControlMapper.toResponse(store.currentRace)
   },

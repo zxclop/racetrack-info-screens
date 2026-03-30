@@ -24,6 +24,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "acorn": "^8.16.0",
     "acorn-walk": "^8.3.5",
     "arg": "^4.1.3",
