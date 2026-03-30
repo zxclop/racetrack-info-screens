@@ -33,3 +33,7 @@ export interface StartRaceCommand {
 export interface SetRaceModeCommand {
   mode: Exclude<RaceMode, "idle" | "ended">
 }
+
+export interface RecordLapCommand {
+  racerName: string
+}

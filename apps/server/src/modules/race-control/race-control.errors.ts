@@ -32,3 +32,10 @@ export class RaceAlreadyStartedError extends RaceControlError {
     this.name = "RaceAlreadyStartedError"
   }
 }
+
+export class ParticipantNotFoundError extends RaceControlError {
+  constructor(racerName: string) {
+    super(`Participant "${racerName}" not found in active race`)
+    this.name = "ParticipantNotFoundError"
+  }
+}

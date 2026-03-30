@@ -26,6 +26,15 @@ export const setRaceModeSchema = {
   required: ["mode"],
 } as const
 
+export const recordLapSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    racerName: { type: "string", minLength: 1, maxLength: 100 },
+  },
+  required: ["racerName"],
+} as const
+
 export const finishRaceSchema = {
   type: "object",
   additionalProperties: false,
@@ -90,6 +99,7 @@ export const currentRaceResponseSchema = {
 
 export type StartRaceDto = FromSchema<typeof startRaceSchema>
 export type SetRaceModeDto = FromSchema<typeof setRaceModeSchema>
+export type RecordLapDto = FromSchema<typeof recordLapSchema>
 export type FinishRaceDto = FromSchema<typeof finishRaceSchema>
 export type EndSessionDto = FromSchema<typeof endSessionSchema>
 export type CurrentRaceResponseDto = FromSchema<typeof currentRaceResponseSchema>

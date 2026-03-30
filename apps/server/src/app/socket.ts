@@ -1,17 +1,22 @@
 import type { Server as HttpServer } from "http"
 import { Server } from "socket.io"
-import { registerRaceGateway } from "../modules/race-control/race.gateway"
 import { registerRaceControlGateway } from "../modules/race-control/race-control.gateway"
+
+const FRONTEND_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+]
 
 export const buildSocket = (httpServer: HttpServer) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: FRONTEND_ORIGINS,
+      methods: ["GET", "POST"],
+      credentials: true,
     },
   })
 
-    registerRaceGateway(io),
-    registerRaceControlGateway(io)
+  registerRaceControlGateway(io)
 
   return io
 }
