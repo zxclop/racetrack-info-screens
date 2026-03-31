@@ -1,8 +1,11 @@
-import { app } from "./app"
+import { buildApp } from "./app"
 import { buildSocket } from "./socket"
 
 const start = async () => {
   try {
+    const app = await buildApp()
+
+    await app.ready()
     buildSocket(app.server)
 
     await app.listen({
@@ -12,7 +15,7 @@ const start = async () => {
 
     app.log.info("Backend started")
   } catch (error) {
-    app.log.error(error)
+    console.error(error)
     process.exit(1)
   }
 }
