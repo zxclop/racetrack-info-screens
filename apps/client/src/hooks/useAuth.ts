@@ -14,7 +14,7 @@ function storeKey(role: Role, key: string) {
 }
 
 function validateKey(role: Role, key: string): Promise<boolean> {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const testSocket = io(SERVER_URL, {
       autoConnect: false,
       auth: { key, role },
@@ -22,9 +22,8 @@ function validateKey(role: Role, key: string): Promise<boolean> {
 
     const timeout = setTimeout(() => {
       testSocket.disconnect();
-      // If backend has no auth middleware yet, accept the key
-      resolve(true);
-    }, 3000);
+      reject(new Error('Connection timeout'));
+    }, 5000);
 
     testSocket.on('connect', () => {
       clearTimeout(timeout);
@@ -35,14 +34,14 @@ function validateKey(role: Role, key: string): Promise<boolean> {
     testSocket.on('connect_error', err => {
       clearTimeout(timeout);
       testSocket.disconnect();
-      // If error i s auth-related, reject; otherwise accept (backend might just be down)
       if (
         err.message?.includes('auth') ||
         err.message?.includes('unauthorized')
       ) {
         resolve(false);
       } else {
-        resolve(true);
+        // Server is down or other network error — let user retry
+        reject(new Error('Cannot connect to server'));
       }
     });
 
@@ -65,14 +64,22 @@ export function useAuth(role: Role) {
       setLoading(true);
       setError('');
 
-      const valid = await validateKey(role, key);
+      try {
+        const valid = await validateKey(role, key);
 
-      if (valid) {
-        storeKey(role, key);
-        setAccessKey(key);
-        setIsAuthenticated(true);
-      } else {
-        setError('Invalid access key. Please try again.');
+        if (valid) {
+          storeKey(role, key);
+          setAccessKey(key);
+          setIsAuthenticated(true);
+        } else {
+          setError('Invalid access key. Please try again.');
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Connection failed. Please try again.'
+        );
       }
 
       setLoading(false);

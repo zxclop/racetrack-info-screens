@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useRaceState } from '../../hooks/useRaceState';
 import { useAuth } from '../../hooks/useAuth';
 import { socket } from '../../services/socket';
@@ -34,6 +35,11 @@ const modeButtons = [
   },
 ];
 
+function computeElapsed(startedAt: string | null): number | null {
+  if (!startedAt) return null;
+  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+}
+
 function formatTimer(seconds: number | null): string {
   if (seconds === null) return '--:--';
   const mins = Math.floor(seconds / 60);
@@ -50,6 +56,19 @@ export default function RaceControlPage() {
     submitKey,
   } = useAuth('safety');
   const raceState = useRaceState(accessKey, 'safety');
+  const [elapsed, setElapsed] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!raceState?.startedAt || raceState.mode === 'ended') {
+      setElapsed(null);
+      return;
+    }
+    setElapsed(computeElapsed(raceState.startedAt));
+    const interval = setInterval(() => {
+      setElapsed(computeElapsed(raceState.startedAt));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [raceState?.startedAt, raceState?.mode]);
 
   if (!isAuthenticated) {
     return (
@@ -92,20 +111,20 @@ export default function RaceControlPage() {
     );
 
   function handleStart() {
-    socket.emit('race:start');
+    socket.emit('race-control:start', { sessionId: raceState!.sessionId });
   }
 
   function handleEndSession() {
     if (!confirm('End the current session?')) return;
-    socket.emit('race:end-session');
+    socket.emit('race-control:end-session');
   }
 
   function handleModeChange(mode: string) {
-    socket.emit('race:mode-change', { mode });
+    socket.emit('race-control:set-mode', { mode });
   }
 
-  const isRacing = ['safe', 'hazard', 'danger'].includes(raceState.status);
-  const isFinished = raceState.status === 'finish';
+  const isRacing = ['safe', 'hazard', 'danger'].includes(raceState.mode);
+  const isFinished = raceState.mode === 'finish';
 
   return (
     <div className='relative isolate min-h-screen bg-gray-900 text-white'>
@@ -132,18 +151,18 @@ export default function RaceControlPage() {
         <div className='text-center mb-4'>
           <span
             className={`inline-block px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider ${
-              raceState.status === 'safe'
+              raceState.mode === 'safe'
                 ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
-                : raceState.status === 'hazard'
+                : raceState.mode === 'hazard'
                   ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/30'
-                  : raceState.status === 'danger'
+                  : raceState.mode === 'danger'
                     ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
-                    : raceState.status === 'finish'
+                    : raceState.mode === 'finish'
                       ? 'bg-gray-500/20 text-gray-300 ring-1 ring-gray-500/30'
                       : 'bg-white/5 text-gray-400 ring-1 ring-white/10'
             }`}
           >
-            {raceState.status}
+            {raceState.mode}
           </span>
         </div>
 
@@ -151,7 +170,7 @@ export default function RaceControlPage() {
         {(isRacing || isFinished) && (
           <div className='text-center mb-6'>
             <p className='text-6xl font-mono font-bold tabular-nums text-white'>
-              {formatTimer(raceState.timer)}
+              {formatTimer(elapsed)}
             </p>
           </div>
         )}
@@ -163,15 +182,12 @@ export default function RaceControlPage() {
               Participants
             </h3>
             <div className='grid grid-cols-2 gap-2'>
-              {raceState.participants.map(p => (
-                <div
-                  key={p.carNumber}
-                  className='flex items-center gap-2 text-sm'
-                >
+              {raceState.participants.map((p, i) => (
+                <div key={i} className='flex items-center gap-2 text-sm'>
                   <span className='bg-indigo-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white'>
-                    {p.carNumber}
+                    {i + 1}
                   </span>
-                  <span className='text-gray-200'>{p.driverName}</span>
+                  <span className='text-gray-200'>{p.name}</span>
                 </div>
               ))}
             </div>
@@ -179,7 +195,7 @@ export default function RaceControlPage() {
         )}
 
         {/* Idle — Start Race */}
-        {raceState.status === 'idle' && (
+        {raceState.mode === 'idle' && (
           <div className='flex flex-col items-center gap-4 mt-8'>
             {raceState.sessionId ? (
               <button
@@ -204,7 +220,7 @@ export default function RaceControlPage() {
                 key={btn.mode}
                 onClick={() => handleModeChange(btn.mode)}
                 className={`text-white text-lg font-bold py-6 rounded-xl transition-all select-none ${
-                  raceState.status === btn.mode
+                  raceState.mode === btn.mode
                     ? `${btn.activeBg} ring-4 ${btn.activeRing} shadow-lg`
                     : `${btn.color} opacity-70 hover:opacity-90`
                 }`}
@@ -233,7 +249,7 @@ export default function RaceControlPage() {
         )}
 
         {/* Ended */}
-        {raceState.status === 'ended' && (
+        {raceState.mode === 'ended' && (
           <p className='text-gray-500 text-center mt-8'>Session ended</p>
         )}
       </div>

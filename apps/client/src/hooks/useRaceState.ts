@@ -17,17 +17,12 @@ export function useRaceState(authKey?: string | null, role?: string) {
 
     socket.connect();
 
-    socket.on('race:state', (data: RaceState) => {
-      setRaceState(data);
-    });
-
-    socket.on('race:updated', (data: RaceState) => {
+    socket.on('race-control:state', (data: RaceState) => {
       setRaceState(data);
     });
 
     return () => {
-      socket.off('race:state');
-      socket.off('race:updated');
+      socket.off('race-control:state');
       socket.disconnect();
     };
   }, [authKey, role]);

@@ -53,14 +53,14 @@ export default function LapTrackerPage() {
       </div>
     );
 
-  function handleLap(carNumber: number) {
-    socket.emit('lap:record', { carNumber });
+  function handleLap(racerName: string) {
+    socket.emit('lap:record', { racerName });
   }
 
   const isRacing = ['safe', 'hazard', 'danger', 'finish'].includes(
-    raceState.status
+    raceState.mode
   );
-  const isEnded = raceState.status === 'ended' || raceState.status === 'idle';
+  const isEnded = raceState.mode === 'ended' || raceState.mode === 'idle';
   const cars = raceState.participants;
 
   return (
@@ -93,12 +93,12 @@ export default function LapTrackerPage() {
                 : 'bg-white/5 text-gray-400 ring-1 ring-white/10'
             }`}
           >
-            {raceState.status}
+            {raceState.mode}
           </span>
         </div>
 
         {/* Ended message */}
-        {raceState.status === 'ended' && (
+        {raceState.mode === 'ended' && (
           <div className='rounded-lg bg-red-500/10 ring-1 ring-red-500/30 p-4 mb-4 text-center'>
             <p className='text-red-400 font-bold text-lg'>Session Ended</p>
             <p className='text-red-400/70 text-sm'>Waiting for next race...</p>
@@ -106,7 +106,7 @@ export default function LapTrackerPage() {
         )}
 
         {/* Waiting message */}
-        {raceState.status === 'idle' && (
+        {raceState.mode === 'idle' && (
           <div className='flex-1 flex items-center justify-center'>
             <p className='text-gray-500 text-center text-lg'>
               Waiting for race to start...
@@ -117,10 +117,10 @@ export default function LapTrackerPage() {
         {/* Car buttons grid — large tappable areas, responsive for tablet */}
         {cars.length > 0 && (
           <div className='flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-fr'>
-            {cars.map(car => (
+            {cars.map((car, i) => (
               <button
-                key={car.carNumber}
-                onClick={() => handleLap(car.carNumber)}
+                key={car.name}
+                onClick={() => handleLap(car.name)}
                 disabled={isEnded}
                 className={`rounded-xl font-bold flex flex-col items-center justify-center min-h-35 transition-all select-none ${
                   isEnded
@@ -128,9 +128,9 @@ export default function LapTrackerPage() {
                     : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 active:scale-95 text-white shadow-lg'
                 }`}
               >
-                <span className='text-5xl leading-none'>{car.carNumber}</span>
+                <span className='text-5xl leading-none'>{i + 1}</span>
                 <span className='text-sm font-normal mt-2 opacity-70'>
-                  {car.driverName}
+                  {car.name}
                 </span>
                 <span className='text-xs font-normal opacity-50'>
                   Laps: {car.laps}
