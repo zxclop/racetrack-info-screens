@@ -2,9 +2,13 @@ import Fastify from "fastify"
 import { registerAppPlugins } from "./plugins"
 import { registerAppRoutes } from "./routes"
 
-export const app = Fastify({
-  logger: true,
-})
+export const buildApp = async () => {
+  const app = Fastify({
+    logger: true,
+  })
 
- registerAppPlugins(app)
- registerAppRoutes(app)
+  await registerAppPlugins(app)
+  await registerAppRoutes(app)
+
+  return app
+}
