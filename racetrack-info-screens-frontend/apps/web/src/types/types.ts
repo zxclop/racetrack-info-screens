@@ -14,6 +14,8 @@ export type RaceMode =
 export interface Participant {
   name: string;
   laps: number;
+  carNumber?: string;        // Car identifier (e.g., "#42")
+  fastestLapTime?: string;   // Fastest lap time (e.g., "01:23.456")
 }
 
 export interface RaceState {

@@ -21,14 +21,50 @@ function getRemainingSeconds(startedAt: string | null): number {
   return Math.max(0, duration - elapsed);
 }
 
+function getFlagColor(mode: string | undefined): string {
+  switch (mode) {
+    case 'safe':
+      return 'bg-green-600';
+    case 'hazard':
+      return 'bg-yellow-400';
+    case 'danger':
+      return 'bg-red-600';
+    case 'finish':
+      return 'bg-checkered';
+    default:
+      return 'bg-gray-600';
+  }
+}
+
+function parseLapTime(timeStr?: string): number {
+  if (!timeStr) return Infinity;
+  // Expected format: "MM:SS.mmm" or "MM:SS"
+  const parts = timeStr.split(':');
+  if (parts.length !== 2) return Infinity;
+  const minutes = parseInt(parts[0], 10);
+  const seconds = parseFloat(parts[1]);
+  return minutes * 60 + seconds;
+}
+
 export default function LeaderBoardPage() {
   const raceState = useRaceState();
 
-  const participants = [...(raceState?.participants ?? [])].sort(
-    (a, b) => b.laps - a.laps || a.name.localeCompare(b.name)
-  );
+  // Sort by fastest lap time if available, otherwise by lap count
+  const participants = [...(raceState?.participants ?? [])].sort((a, b) => {
+    const aTime = parseLapTime(a.fastestLapTime);
+    const bTime = parseLapTime(b.fastestLapTime);
+    
+    // If both have lap times, sort by time
+    if (aTime !== Infinity && bTime !== Infinity) {
+      if (aTime !== bTime) return aTime - bTime;
+    }
+    // Fallback: sort by lap count (descending), then by name
+    if (b.laps !== a.laps) return b.laps - a.laps;
+    return a.name.localeCompare(b.name);
+  });
 
   const remaining = getRemainingSeconds(raceState?.startedAt ?? null);
+  const flagColor = getFlagColor(raceState?.mode);
 
   return (
     <ScreenShell>
@@ -38,7 +74,10 @@ export default function LeaderBoardPage() {
             <h1 className='text-4xl font-semibold tracking-tight'>Leader Board</h1>
             <p className='mt-2 text-gray-400'>
               Session: {raceState?.sessionName ?? '—'} • Mode:{' '}
-              {raceState?.mode ?? 'connecting…'}
+              <span className='inline-flex items-center gap-2'>
+                <span className={`inline-block h-3 w-3 rounded-full ${flagColor}`} />
+                {raceState?.mode ?? 'connecting…'}
+              </span>
             </p>
           </div>
           <div className='text-right'>
@@ -55,13 +94,20 @@ export default function LeaderBoardPage() {
               <tr>
                 <th className='px-4 py-3'>#</th>
                 <th className='px-4 py-3'>Driver</th>
-                <th className='px-4 py-3'>Laps</th>
+                {participants.some(p => p.carNumber) && (
+                  <th className='px-4 py-3'>Car</th>
+                )}
+                {participants.some(p => p.fastestLapTime) ? (
+                  <th className='px-4 py-3'>Best Lap</th>
+                ) : (
+                  <th className='px-4 py-3'>Laps</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {participants.length === 0 ? (
                 <tr>
-                  <td className='px-4 py-6 text-gray-400' colSpan={3}>
+                  <td className='px-4 py-6 text-gray-400' colSpan={participants.some(p => p.carNumber) ? 4 : 3}>
                     No active race data yet.
                   </td>
                 </tr>
@@ -70,8 +116,11 @@ export default function LeaderBoardPage() {
                   <tr key={p.name} className='odd:bg-white/0 even:bg-white/5'>
                     <td className='px-4 py-3 font-mono text-gray-400'>{idx + 1}</td>
                     <td className='px-4 py-3 text-lg'>{p.name}</td>
+                    {participants.some(p => p.carNumber) && (
+                      <td className='px-4 py-3 text-lg font-semibold'>{p.carNumber ?? '—'}</td>
+                    )}
                     <td className='px-4 py-3 text-lg font-semibold tabular-nums'>
-                      {p.laps}
+                      {p.fastestLapTime ?? `${p.laps} laps`}
                     </td>
                   </tr>
                 ))
