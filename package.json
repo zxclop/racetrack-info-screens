@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node apps/server/src/app/server.ts",
+    "dev": "ts-node apps/server/src/app/dev-server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

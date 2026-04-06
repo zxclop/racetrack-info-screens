@@ -5,6 +5,14 @@ import {
 import { raceStore } from "../../state/in-memory-store"
 import { raceSessionValidators } from "./race-session.validators"
 
+const sessionSubscribers = new Set<() => void>()
+
+const notifySessionSubscribers = () => {
+  for (const subscriber of sessionSubscribers) {
+    subscriber()
+  }
+}
+
 export const raceSessionsService = {
   getAll() {
     return {
@@ -14,17 +22,26 @@ export const raceSessionsService = {
   },
 
   create(raceSession: CreateRaceSessionDto) {
-    const createdSession = raceStore.create(raceSession)
+    const createdSession = raceStore.create(
+      raceSessionValidators.prepareCreate(raceSession)
+    )
+
+    notifySessionSubscribers()
 
     return createdSession
   },
 
   update(id: string, updatedFields: UpdateRaceSessionDto) {
-    const updatedSession = raceStore.update(id, updatedFields)
+    const updatedSession = raceStore.update(
+      id,
+      raceSessionValidators.prepareUpdate(updatedFields)
+    )
 
     if (!updatedSession) {
       throw new Error("session not found")
     }
+
+    notifySessionSubscribers()
 
     return updatedSession
   },
@@ -35,5 +52,15 @@ export const raceSessionsService = {
     if (!deleted) {
       throw new Error("session not found")
     }
+
+    notifySessionSubscribers()
   },
+
+  subscribe(listener: () => void) {
+    sessionSubscribers.add(listener)
+
+    return () => {
+      sessionSubscribers.delete(listener)
+    }
+  }
 }
