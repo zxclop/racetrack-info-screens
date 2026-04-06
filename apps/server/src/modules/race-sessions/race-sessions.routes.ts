@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify"
+import { requireRoles } from "../auth/auth.guards"
 import { raceSessionsService } from "./race-sessions.service"
 import {
   createRaceSessionSchema,
@@ -13,6 +14,7 @@ import {
 
 const raceSessionsRoutes: FastifyPluginAsync = async (app) => {
   app.get("/", {
+    preHandler: requireRoles(["receptionist"]),
     schema: {
       response: {
         200: {
@@ -32,6 +34,7 @@ const raceSessionsRoutes: FastifyPluginAsync = async (app) => {
   })
 
   app.post<{ Body: CreateRaceSessionDto, Reply: RaceSessionDto }>("/", {
+    preHandler: requireRoles(["receptionist"]),
     schema: {
       body: createRaceSessionSchema,
       response: {
@@ -49,6 +52,7 @@ const raceSessionsRoutes: FastifyPluginAsync = async (app) => {
     Body: UpdateRaceSessionDto
     Reply: RaceSessionDto
   }>("/:id", {
+    preHandler: requireRoles(["receptionist"]),
     schema: {
       params: idParamsSchema,
       body: updateRaceSessionSchema,
@@ -63,6 +67,7 @@ const raceSessionsRoutes: FastifyPluginAsync = async (app) => {
   })
   
   app.delete<{ Params: IdParamsDto }>("/:id", {
+    preHandler: requireRoles(["receptionist"]),
     schema: {
       params: idParamsSchema,
       response: {

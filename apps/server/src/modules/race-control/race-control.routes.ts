@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify"
+import { requireRoles } from "../auth/auth.guards"
 import { raceControlService } from "./race-control.service"
 import {
   currentRaceResponseSchema,
@@ -14,6 +15,7 @@ import {
 
 const raceControlRoutes: FastifyPluginAsync = async (app) => {
   app.get("/state", {
+    preHandler: requireRoles(["receptionist", "safety", "observer"]),
     schema: {
       response: {
         200: currentRaceResponseSchema,
@@ -25,6 +27,7 @@ const raceControlRoutes: FastifyPluginAsync = async (app) => {
   })
 
   app.post<{ Body: StartRaceDto }>("/start", {
+    preHandler: requireRoles(["safety"]),
     schema: {
       body: startRaceSchema,
       response: {
@@ -37,6 +40,7 @@ const raceControlRoutes: FastifyPluginAsync = async (app) => {
   })
 
   app.post<{ Body: SetRaceModeDto }>("/mode", {
+    preHandler: requireRoles(["safety"]),
     schema: {
       body: setRaceModeSchema,
       response: {
@@ -49,6 +53,7 @@ const raceControlRoutes: FastifyPluginAsync = async (app) => {
   })
 
   app.post<{ Body: FinishRaceDto }>("/finish", {
+    preHandler: requireRoles(["safety"]),
     schema: {
       body: finishRaceSchema,
       response: {
@@ -61,6 +66,7 @@ const raceControlRoutes: FastifyPluginAsync = async (app) => {
   })
 
   app.post<{ Body: EndSessionDto }>("/end-session", {
+    preHandler: requireRoles(["safety"]),
     schema: {
       body: endSessionSchema,
       response: {

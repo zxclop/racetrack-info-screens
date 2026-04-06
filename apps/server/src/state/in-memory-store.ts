@@ -1,21 +1,25 @@
 import crypto from "crypto"
 import { RaceSession } from "../modules/race-sessions/race-session.types"
-import { CurrentRace } from "../modules/race-control/race-control.types"
+import { CompletedRace, CurrentRace } from "../modules/race-control/race-control.types"
 
-export const store: { currentRace: CurrentRace; nextSessions: RaceSession[]; finishedSessions: RaceSession[] } = {
-  currentRace: {
-    sessionId: null,
-    sessionName: null,
-    mode: "idle",
-    startedAt: null,
-    endedAt: null,
-    participants: [],
-    bestLap: null,
-  },
+export const createEmptyRace = (): CurrentRace => ({
+  sessionId: null,
+  sessionName: null,
+  mode: "idle",
+  startedAt: null,
+  endedAt: null,
+  durationSeconds: null,
+  remainingSeconds: null,
+  participants: [],
+  bestLap: null,
+})
 
-  nextSessions: [],
-
-  finishedSessions: [],
+export const store: {
+  currentRace: CurrentRace
+  lastCompletedRace: CompletedRace | null
+} = {
+  currentRace: createEmptyRace(),
+  lastCompletedRace: null,
 }
 
 class RaceSessionStore {
@@ -27,6 +31,10 @@ class RaceSessionStore {
 
   findById(id: string) {
     return this.sessions.get(id)
+  }
+
+  peekNext() {
+    return this.findAll()[0] ?? null
   }
 
   create(data: Omit<RaceSession, "id">) {
