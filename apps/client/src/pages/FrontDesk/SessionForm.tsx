@@ -22,7 +22,7 @@ export default function SessionForm({ onCreated }: SessionFormProps) {
       const now = new Date();
       const newSession = await createSession({
         name: name.trim(),
-        racerNames: ['Driver 1'],
+        racerNames: [],
         startTime: now.toISOString(),
         endTime: new Date(now.getTime() + 600000).toISOString(),
       });

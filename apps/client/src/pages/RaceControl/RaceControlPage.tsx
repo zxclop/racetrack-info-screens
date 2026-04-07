@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useRaceState } from '../../hooks/useRaceState';
 import { useAuth } from '../../hooks/useAuth';
 import { socket } from '../../services/socket';
@@ -92,24 +93,27 @@ export default function RaceControlPage() {
     );
 
   function handleStart() {
-    socket.emit('race:start');
+    const nextId = raceState?.nextRace?.sessionId;
+    if (nextId) {
+      socket.emit('race-control:start', { sessionId: nextId });
+    }
   }
 
   function handleEndSession() {
     if (!confirm('End the current session?')) return;
-    socket.emit('race:end-session');
+    socket.emit('race-control:end-session');
   }
 
   function handleModeChange(mode: string) {
-    socket.emit('race:mode-change', { mode });
+    socket.emit('race-control:set-mode', { mode });
   }
 
-  const isRacing = ['safe', 'hazard', 'danger'].includes(raceState.status);
-  const isFinished = raceState.status === 'finish';
+  const mode = raceState.status;
+  const isRacing = ['safe', 'hazard', 'danger'].includes(mode);
+  const isFinished = mode === 'finish';
 
   return (
     <div className='relative isolate min-h-screen bg-gray-900 text-white'>
-      {/* Decorative gradient blur */}
       <div
         className='absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80'
         aria-hidden='true'
@@ -124,6 +128,14 @@ export default function RaceControlPage() {
       </div>
 
       <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className='mb-3'>
+          <Link
+            to='/'
+            className='inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors'
+          >
+            ← Back
+          </Link>
+        </div>
         <h1 className='text-2xl font-semibold tracking-tight text-white text-center mb-3'>
           Race Control
         </h1>
@@ -132,18 +144,18 @@ export default function RaceControlPage() {
         <div className='text-center mb-4'>
           <span
             className={`inline-block px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider ${
-              raceState.status === 'safe'
+              mode === 'safe'
                 ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
-                : raceState.status === 'hazard'
+                : mode === 'hazard'
                   ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/30'
-                  : raceState.status === 'danger'
+                  : mode === 'danger'
                     ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
-                    : raceState.status === 'finish'
+                    : mode === 'finish'
                       ? 'bg-gray-500/20 text-gray-300 ring-1 ring-gray-500/30'
                       : 'bg-white/5 text-gray-400 ring-1 ring-white/10'
             }`}
           >
-            {raceState.status}
+            {mode}
           </span>
         </div>
 
@@ -178,16 +190,39 @@ export default function RaceControlPage() {
           </div>
         )}
 
-        {/* Idle — Start Race */}
-        {raceState.status === 'idle' && (
+        {/* Idle / Ended — Start Race */}
+        {(mode === 'idle' || mode === 'ended') && (
           <div className='flex flex-col items-center gap-4 mt-8'>
-            {raceState.sessionId ? (
-              <button
-                onClick={handleStart}
-                className='rounded-xl bg-green-600 hover:bg-green-500 text-white text-xl font-bold px-12 py-6 shadow-lg w-full max-w-xs transition-colors'
-              >
-                Start Race
-              </button>
+            {mode === 'ended' && (
+              <div className='rounded-lg bg-yellow-500/10 ring-1 ring-yellow-500/30 p-4 text-center w-full max-w-xs'>
+                <p className='text-yellow-400 font-medium'>Session ended</p>
+              </div>
+            )}
+            {raceState.nextRace ? (
+              <div className='w-full max-w-xs space-y-3'>
+                <p className='text-sm text-gray-400 text-center'>
+                  Next session to start
+                </p>
+                <button
+                  onClick={handleStart}
+                  className='rounded-xl bg-green-600 hover:bg-green-500 text-white text-lg font-bold px-8 py-4 shadow-lg w-full transition-colors'
+                >
+                  Start: {raceState.nextRace.sessionName}
+                </button>
+                <div className='mt-2'>
+                  {raceState.nextRace.participants.map(p => (
+                    <div
+                      key={p.carNumber}
+                      className='flex items-center gap-2 text-sm py-1'
+                    >
+                      <span className='bg-indigo-500 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white'>
+                        {p.carNumber}
+                      </span>
+                      <span className='text-gray-300'>{p.driverName}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <p className='text-gray-500 text-center'>
                 No upcoming race sessions
@@ -204,7 +239,7 @@ export default function RaceControlPage() {
                 key={btn.mode}
                 onClick={() => handleModeChange(btn.mode)}
                 className={`text-white text-lg font-bold py-6 rounded-xl transition-all select-none ${
-                  raceState.status === btn.mode
+                  mode === btn.mode
                     ? `${btn.activeBg} ring-4 ${btn.activeRing} shadow-lg`
                     : `${btn.color} opacity-70 hover:opacity-90`
                 }`}
@@ -230,11 +265,6 @@ export default function RaceControlPage() {
               End Session
             </button>
           </div>
-        )}
-
-        {/* Ended */}
-        {raceState.status === 'ended' && (
-          <p className='text-gray-500 text-center mt-8'>Session ended</p>
         )}
       </div>
     </div>

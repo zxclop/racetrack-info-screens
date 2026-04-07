@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useRaceState } from '../../hooks/useRaceState';
 import { useAuth } from '../../hooks/useAuth';
 import { socket } from '../../services/socket';
@@ -53,8 +54,8 @@ export default function LapTrackerPage() {
       </div>
     );
 
-  function handleLap(carNumber: number) {
-    socket.emit('lap:record', { carNumber });
+  function handleLap(racerName: string) {
+    socket.emit('lap:record', { racerName });
   }
 
   const isRacing = ['safe', 'hazard', 'danger', 'finish'].includes(
@@ -80,6 +81,14 @@ export default function LapTrackerPage() {
       </div>
 
       <div className='px-4 py-6 flex flex-col flex-1'>
+        <div className='mb-2'>
+          <Link
+            to='/'
+            className='inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors'
+          >
+            ← Back
+          </Link>
+        </div>
         <h1 className='text-xl font-semibold tracking-tight text-white text-center mb-2'>
           Lap-line Tracker
         </h1>
@@ -120,7 +129,7 @@ export default function LapTrackerPage() {
             {cars.map(car => (
               <button
                 key={car.carNumber}
-                onClick={() => handleLap(car.carNumber)}
+                onClick={() => handleLap(car.driverName)}
                 disabled={isEnded}
                 className={`rounded-xl font-bold flex flex-col items-center justify-center min-h-35 transition-all select-none ${
                   isEnded

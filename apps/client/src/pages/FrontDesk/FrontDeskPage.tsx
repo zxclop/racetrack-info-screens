@@ -1,33 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { deleteSession, getSessions } from '../../services/api';
 import type { RaceSession } from '../../types/types';
 import { useAuth } from '../../hooks/useAuth';
+import { useRaceState } from '../../hooks/useRaceState';
 import AccessKeyForm from '../../components/AccessKeyForm';
 import SessionForm from './SessionForm';
 import DriverList from './DriverList';
 
 export default function FrontDeskPage() {
   const {
+    accessKey,
     isAuthenticated,
     error: authError,
     loading: authLoading,
     submitKey,
   } = useAuth('receptionist');
+  const raceState = useRaceState(accessKey, 'receptionist');
   const [sessions, setSessions] = useState<RaceSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
+  const loadSessions = useCallback(async () => {
+    setLoadingSessions(true);
+    const data = await getSessions();
+    setSessions(data);
+    setLoadingSessions(false);
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
-    async function loadSessions() {
-      setLoadingSessions(true);
-      const data = await getSessions();
-      setSessions(data);
-      setLoadingSessions(false);
-    }
     loadSessions();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadSessions]);
+
+  // Refresh sessions whenever race state changes (session started/ended)
+  useEffect(() => {
+    if (!isAuthenticated || !raceState) return;
+    loadSessions();
+  }, [raceState?.sessionId, raceState?.status, isAuthenticated, loadSessions]);
 
   if (!isAuthenticated) {
     return (
@@ -82,6 +93,12 @@ export default function FrontDeskPage() {
       </div>
 
       <div className='mx-auto max-w-2xl'>
+        <Link
+          to='/'
+          className='inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-4'
+        >
+          ← Back
+        </Link>
         <h1 className='text-4xl font-semibold tracking-tight text-white mb-2'>
           Front Desk
         </h1>

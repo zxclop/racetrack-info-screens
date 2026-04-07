@@ -1,17 +1,3 @@
-export interface BestLap {
-  time: string;
-  racerName: string;
-}
-
-export interface RaceSession {
-  id: string;
-  name: string;
-  racerNames: string[];
-  startTime: string;
-  endTime: string;
-  bestLap?: BestLap;
-}
-
 export type RaceMode =
   | 'idle'
   | 'safe'
@@ -19,8 +5,6 @@ export type RaceMode =
   | 'danger'
   | 'finish'
   | 'ended';
-
-export type NewSessionData = Omit<RaceSession, 'id' | 'bestLap'>;
 
 export interface Participant {
   carNumber: number;
@@ -54,4 +38,10 @@ export interface RaceState {
   callToPaddock: boolean;
 }
 
-export type Role = 'receptionist' | 'safety' | 'observer';
+export interface RaceSession {
+  id: string;
+  name: string;
+  racerNames: string[];
+  startTime: string;
+  endTime: string;
+}
