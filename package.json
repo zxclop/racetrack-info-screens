@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node apps/server/src/app/server.ts",
-    "dev": "ts-node apps/server/src/app/dev-server.ts",
+    "start": "concurrently \"ts-node apps/server/src/app/server.ts\" \"cd apps/client && npx vite --host 0.0.0.0\" \"cd apps/web && npx vite --host 0.0.0.0 --port 5174\"",
+    "dev": "concurrently \"ts-node apps/server/src/app/dev-server.ts\" \"cd apps/client && npx vite --host 0.0.0.0\" \"cd apps/web && npx vite --host 0.0.0.0 --port 5174\"",
+    "server": "ts-node apps/server/src/app/server.ts",
+    "server:dev": "ts-node apps/server/src/app/dev-server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -29,6 +31,7 @@
     "acorn": "^8.16.0",
     "acorn-walk": "^8.3.5",
     "arg": "^4.1.3",
+    "concurrently": "^9.2.1",
     "create-require": "^1.1.1",
     "diff": "^4.0.4",
     "fastify": "^5.8.2",

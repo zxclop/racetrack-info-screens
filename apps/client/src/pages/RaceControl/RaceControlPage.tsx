@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useRaceState } from '../../hooks/useRaceState';
 import { useAuth } from '../../hooks/useAuth';
 import { socket } from '../../services/socket';
@@ -35,11 +35,6 @@ const modeButtons = [
   },
 ];
 
-function computeElapsed(startedAt: string | null): number | null {
-  if (!startedAt) return null;
-  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-}
-
 function formatTimer(seconds: number | null): string {
   if (seconds === null) return '--:--';
   const mins = Math.floor(seconds / 60);
@@ -56,19 +51,6 @@ export default function RaceControlPage() {
     submitKey,
   } = useAuth('safety');
   const raceState = useRaceState(accessKey, 'safety');
-  const [elapsed, setElapsed] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!raceState?.startedAt || raceState.mode === 'ended') {
-      setElapsed(null);
-      return;
-    }
-    setElapsed(computeElapsed(raceState.startedAt));
-    const interval = setInterval(() => {
-      setElapsed(computeElapsed(raceState.startedAt));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [raceState?.startedAt, raceState?.mode]);
 
   if (!isAuthenticated) {
     return (
@@ -111,7 +93,10 @@ export default function RaceControlPage() {
     );
 
   function handleStart() {
-    socket.emit('race-control:start', { sessionId: raceState!.sessionId });
+    const nextId = raceState?.nextRace?.sessionId;
+    if (nextId) {
+      socket.emit('race-control:start', { sessionId: nextId });
+    }
   }
 
   function handleEndSession() {
@@ -123,12 +108,12 @@ export default function RaceControlPage() {
     socket.emit('race-control:set-mode', { mode });
   }
 
-  const isRacing = ['safe', 'hazard', 'danger'].includes(raceState.mode);
-  const isFinished = raceState.mode === 'finish';
+  const mode = raceState.status;
+  const isRacing = ['safe', 'hazard', 'danger'].includes(mode);
+  const isFinished = mode === 'finish';
 
   return (
     <div className='relative isolate min-h-screen bg-gray-900 text-white'>
-      {/* Decorative gradient blur */}
       <div
         className='absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80'
         aria-hidden='true'
@@ -143,6 +128,14 @@ export default function RaceControlPage() {
       </div>
 
       <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className='mb-3'>
+          <Link
+            to='/'
+            className='inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors'
+          >
+            ← Back
+          </Link>
+        </div>
         <h1 className='text-2xl font-semibold tracking-tight text-white text-center mb-3'>
           Race Control
         </h1>
@@ -151,18 +144,18 @@ export default function RaceControlPage() {
         <div className='text-center mb-4'>
           <span
             className={`inline-block px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider ${
-              raceState.mode === 'safe'
+              mode === 'safe'
                 ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
-                : raceState.mode === 'hazard'
+                : mode === 'hazard'
                   ? 'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/30'
-                  : raceState.mode === 'danger'
+                  : mode === 'danger'
                     ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
-                    : raceState.mode === 'finish'
+                    : mode === 'finish'
                       ? 'bg-gray-500/20 text-gray-300 ring-1 ring-gray-500/30'
                       : 'bg-white/5 text-gray-400 ring-1 ring-white/10'
             }`}
           >
-            {raceState.mode}
+            {mode}
           </span>
         </div>
 
@@ -170,7 +163,7 @@ export default function RaceControlPage() {
         {(isRacing || isFinished) && (
           <div className='text-center mb-6'>
             <p className='text-6xl font-mono font-bold tabular-nums text-white'>
-              {formatTimer(elapsed)}
+              {formatTimer(raceState.timer)}
             </p>
           </div>
         )}
@@ -182,28 +175,54 @@ export default function RaceControlPage() {
               Participants
             </h3>
             <div className='grid grid-cols-2 gap-2'>
-              {raceState.participants.map((p, i) => (
-                <div key={i} className='flex items-center gap-2 text-sm'>
+              {raceState.participants.map(p => (
+                <div
+                  key={p.carNumber}
+                  className='flex items-center gap-2 text-sm'
+                >
                   <span className='bg-indigo-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white'>
-                    {i + 1}
+                    {p.carNumber}
                   </span>
-                  <span className='text-gray-200'>{p.name}</span>
+                  <span className='text-gray-200'>{p.driverName}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Idle — Start Race */}
-        {raceState.mode === 'idle' && (
+        {/* Idle / Ended — Start Race */}
+        {(mode === 'idle' || mode === 'ended') && (
           <div className='flex flex-col items-center gap-4 mt-8'>
-            {raceState.sessionId ? (
-              <button
-                onClick={handleStart}
-                className='rounded-xl bg-green-600 hover:bg-green-500 text-white text-xl font-bold px-12 py-6 shadow-lg w-full max-w-xs transition-colors'
-              >
-                Start Race
-              </button>
+            {mode === 'ended' && (
+              <div className='rounded-lg bg-yellow-500/10 ring-1 ring-yellow-500/30 p-4 text-center w-full max-w-xs'>
+                <p className='text-yellow-400 font-medium'>Session ended</p>
+              </div>
+            )}
+            {raceState.nextRace ? (
+              <div className='w-full max-w-xs space-y-3'>
+                <p className='text-sm text-gray-400 text-center'>
+                  Next session to start
+                </p>
+                <button
+                  onClick={handleStart}
+                  className='rounded-xl bg-green-600 hover:bg-green-500 text-white text-lg font-bold px-8 py-4 shadow-lg w-full transition-colors'
+                >
+                  Start: {raceState.nextRace.sessionName}
+                </button>
+                <div className='mt-2'>
+                  {raceState.nextRace.participants.map(p => (
+                    <div
+                      key={p.carNumber}
+                      className='flex items-center gap-2 text-sm py-1'
+                    >
+                      <span className='bg-indigo-500 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white'>
+                        {p.carNumber}
+                      </span>
+                      <span className='text-gray-300'>{p.driverName}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <p className='text-gray-500 text-center'>
                 No upcoming race sessions
@@ -220,7 +239,7 @@ export default function RaceControlPage() {
                 key={btn.mode}
                 onClick={() => handleModeChange(btn.mode)}
                 className={`text-white text-lg font-bold py-6 rounded-xl transition-all select-none ${
-                  raceState.mode === btn.mode
+                  mode === btn.mode
                     ? `${btn.activeBg} ring-4 ${btn.activeRing} shadow-lg`
                     : `${btn.color} opacity-70 hover:opacity-90`
                 }`}
@@ -246,11 +265,6 @@ export default function RaceControlPage() {
               End Session
             </button>
           </div>
-        )}
-
-        {/* Ended */}
-        {raceState.mode === 'ended' && (
-          <p className='text-gray-500 text-center mt-8'>Session ended</p>
         )}
       </div>
     </div>

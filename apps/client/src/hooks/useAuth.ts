@@ -34,9 +34,11 @@ function validateKey(role: Role, key: string): Promise<boolean> {
     testSocket.on('connect_error', err => {
       clearTimeout(timeout);
       testSocket.disconnect();
+      const msg = (err.message ?? '').toLowerCase();
       if (
-        err.message?.includes('auth') ||
-        err.message?.includes('unauthorized')
+        msg.includes('auth') ||
+        msg.includes('unauthorized') ||
+        msg.includes('invalid')
       ) {
         resolve(false);
       } else {

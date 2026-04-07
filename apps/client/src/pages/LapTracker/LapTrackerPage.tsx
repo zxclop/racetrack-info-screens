@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useRaceState } from '../../hooks/useRaceState';
 import { useAuth } from '../../hooks/useAuth';
 import { socket } from '../../services/socket';
@@ -58,9 +59,9 @@ export default function LapTrackerPage() {
   }
 
   const isRacing = ['safe', 'hazard', 'danger', 'finish'].includes(
-    raceState.mode
+    raceState.status
   );
-  const isEnded = raceState.mode === 'ended' || raceState.mode === 'idle';
+  const isEnded = raceState.status === 'ended' || raceState.status === 'idle';
   const cars = raceState.participants;
 
   return (
@@ -80,6 +81,14 @@ export default function LapTrackerPage() {
       </div>
 
       <div className='px-4 py-6 flex flex-col flex-1'>
+        <div className='mb-2'>
+          <Link
+            to='/'
+            className='inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors'
+          >
+            ← Back
+          </Link>
+        </div>
         <h1 className='text-xl font-semibold tracking-tight text-white text-center mb-2'>
           Lap-line Tracker
         </h1>
@@ -93,12 +102,12 @@ export default function LapTrackerPage() {
                 : 'bg-white/5 text-gray-400 ring-1 ring-white/10'
             }`}
           >
-            {raceState.mode}
+            {raceState.status}
           </span>
         </div>
 
         {/* Ended message */}
-        {raceState.mode === 'ended' && (
+        {raceState.status === 'ended' && (
           <div className='rounded-lg bg-red-500/10 ring-1 ring-red-500/30 p-4 mb-4 text-center'>
             <p className='text-red-400 font-bold text-lg'>Session Ended</p>
             <p className='text-red-400/70 text-sm'>Waiting for next race...</p>
@@ -106,7 +115,7 @@ export default function LapTrackerPage() {
         )}
 
         {/* Waiting message */}
-        {raceState.mode === 'idle' && (
+        {raceState.status === 'idle' && (
           <div className='flex-1 flex items-center justify-center'>
             <p className='text-gray-500 text-center text-lg'>
               Waiting for race to start...
@@ -117,10 +126,10 @@ export default function LapTrackerPage() {
         {/* Car buttons grid — large tappable areas, responsive for tablet */}
         {cars.length > 0 && (
           <div className='flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-fr'>
-            {cars.map((car, i) => (
+            {cars.map(car => (
               <button
-                key={car.name}
-                onClick={() => handleLap(car.name)}
+                key={car.carNumber}
+                onClick={() => handleLap(car.driverName)}
                 disabled={isEnded}
                 className={`rounded-xl font-bold flex flex-col items-center justify-center min-h-35 transition-all select-none ${
                   isEnded
@@ -128,9 +137,9 @@ export default function LapTrackerPage() {
                     : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 active:scale-95 text-white shadow-lg'
                 }`}
               >
-                <span className='text-5xl leading-none'>{i + 1}</span>
+                <span className='text-5xl leading-none'>{car.carNumber}</span>
                 <span className='text-sm font-normal mt-2 opacity-70'>
-                  {car.name}
+                  {car.driverName}
                 </span>
                 <span className='text-xs font-normal opacity-50'>
                   Laps: {car.laps}
