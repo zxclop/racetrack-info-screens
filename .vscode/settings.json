@@ -1,0 +1,7 @@
+{
+    "java.project.sourcePaths": [
+        "prettifier/src",
+        "MoviesAPI/API/src/main/java/com/example/API"
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
